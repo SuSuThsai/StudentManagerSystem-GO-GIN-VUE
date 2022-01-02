@@ -2,10 +2,12 @@ package model
 
 import (
 	"YamadaKESHE/utils/errmsg"
+	"gorm.io/gorm"
 	"time"
 )
 
 type Rtsl struct {
+	gorm.Model
 	Lng      string `gorm:"type:varchar(30)"json:"lng"`
 	Lat      string `gorm:"type:varchar(30)"json:"lat"`
 	LDay     string `gorm:"type:varchar(30)"json:"l_day"`
@@ -15,13 +17,16 @@ type Rtsl struct {
 	Role     int    `json:"role"`
 }
 
+var nums =make(map[string]bool)
 // RtslInCreat 录入实时位置
 func RtslInCreat(userid string, lng string, lat string) int {
 	var rtsl Rtsl
 	var user User
 	Day := time.Now().Format("2006-01-02")
 	db.Where("userid = ?", userid).First(&rtsl)
-	if user.ID == 0 {
+	db.Where("userid = ?", userid).First(&user)
+	if rtsl.ID == 0&&user.ID!=0&&!nums[userid] {
+		nums[userid]=true
 		rtsl.Userid = user.Userid
 		rtsl.Username = user.Username
 		rtsl.Class = user.Class
@@ -34,10 +39,11 @@ func RtslInCreat(userid string, lng string, lat string) int {
 			return errmsg.ERROR_UPDATE_FAIL
 		}
 		return errmsg.SUCCESS
-	}
-	err = db.Model(&rtsl).Updates(map[string]interface{}{"lng": lng, "lat": lat}).Error
-	if err != nil {
-		return errmsg.ERROR_UPDATE_FAIL
+	}else {
+		err = db.Model(&rtsl).Updates(map[string]interface{}{"lng": lng, "lat": lat}).Error
+		if err != nil {
+			return errmsg.ERROR_UPDATE_FAIL
+		}
 	}
 	return errmsg.SUCCESS
 }
